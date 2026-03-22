@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>GÁI XINH TIKTOK VN 💖</title>
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./favicon.png" sizes="32x32">
+  <link rel="shortcut icon" href="./favicon.png">
+  <link rel="apple-touch-icon" href="./favicon.png">
+  <meta name="theme-color" content="#000000">
+  <link rel="stylesheet" href="./assets/app.css" />
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- TOP: ONLY GIFT -->
+    <header class="topbar">
+      <div class="top-spacer"></div>
+
+      <button class="icon-btn" id="btnGift" aria-label="Gift">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 12v9H4v-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M2 7h20v5H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12 7v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 7c-1.8 0-3-1.2-3-2.5S10.2 2 12 2c1.1 0 2 .6 2.6 1.4.6-.8 1.5-1.4 2.6-1.4 1.8 0 3 1.2 3 2.5S13.8 7 12 7z"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- FEED -->
+    <main class="main">
+      <div class="feed" id="feed"></div>
+
+      <!-- MUTE (keep for autoplay) -->
+      <button class="mute-fab" id="btnMute" aria-label="Mute toggle"></button>
+
+      <!-- Minimal caption (random title bank) -->
+      <div class="caption" id="caption"></div>
+    </main>
+
+    <div class="toast" id="toast" aria-live="polite"></div>
+  </div>
+
+  <script src="./assets/app.js"></script>
+</body>
+</html>

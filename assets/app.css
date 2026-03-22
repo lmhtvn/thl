@@ -1,0 +1,189 @@
+:root{
+  --bg:#000;
+  --fg:#fff;
+  --stroke: rgba(255,255,255,.10);
+  --glass: rgba(20,20,20,.55);
+  --muted: rgba(255,255,255,.78);
+
+  --safeTop: env(safe-area-inset-top);
+  --safeBottom: env(safe-area-inset-bottom);
+}
+
+*{box-sizing:border-box}
+html,body{
+  height:100%;
+  margin:0;
+  padding:0;
+  background: var(--bg);
+  color: var(--fg);
+  overflow-x:hidden !important;
+}
+body{
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.app{
+  position:relative;
+  width:100%;
+  height:100svh;
+  overflow:hidden;
+}
+
+/* TOPBAR: ONLY gift */
+.topbar{
+  position:fixed;
+  top:0; left:0; right:0;
+  z-index:40;
+  padding: calc(14px + var(--safeTop)) 16px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background: linear-gradient(to bottom, rgba(0,0,0,.82), rgba(0,0,0,.30), rgba(0,0,0,0));
+  pointer-events:none;
+}
+.topbar > *{pointer-events:auto}
+.top-spacer{width:1px;height:1px;opacity:0}
+
+.icon-btn{
+  width:44px;height:44px;
+  border:none;
+  background: transparent;
+  color: var(--fg);
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+.icon-btn svg{width:26px;height:26px}
+
+.main{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100svh;
+}
+
+/* FEED */
+.feed{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow-y:auto;
+  overflow-x:hidden !important;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  background:#000;
+}
+.slide{
+  position:relative;
+  height:100svh;
+  width:100%;
+  scroll-snap-align:start;
+  background:#000;
+  overflow:hidden;
+}
+.slide video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit: cover; /* TikTok style */
+  background:#000;
+}
+.slide::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: radial-gradient(120% 80% at 50% 30%, rgba(0,0,0,0) 0%, rgba(0,0,0,.32) 55%, rgba(0,0,0,.72) 100%);
+}
+
+/* MUTE FAB */
+.mute-fab{
+  position: fixed;
+  left: 16px;
+  top: calc(120px + var(--safeTop));
+  z-index: 30;
+  width:56px;height:56px;
+  border-radius:999px;
+  border:1px solid var(--stroke);
+  background: var(--glass);
+  color: var(--fg);
+  display:grid;
+  place-items:center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  /* Tap hint animation */
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity .28s ease, transform .28s ease;
+}
+.mute-fab svg{width:24px;height:24px}
+
+/* Minimal caption */
+.caption{
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(18px + var(--safeBottom));
+  z-index: 30;
+
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: .2px;
+  color: rgba(255,255,255,.92);
+  text-shadow: 0 10px 28px rgba(0,0,0,.65);
+  user-select:none;
+  pointer-events:none;
+  line-height:1.2;
+
+  /* Tap hint animation */
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+/* Toast */
+.toast{
+  position: fixed;
+  left:50%;
+  transform: translateX(-50%);
+  bottom: calc(70px + var(--safeBottom));
+  z-index: 80;
+  display:none;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.60);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-weight: 900;
+  max-width: 92vw;
+}
+.toast.show{display:block}
+
+/* ✅ Tap hint hidden state (JS toggles this class) */
+.is-hidden{
+  opacity: 0 !important;
+  transform: translateY(8px) scale(.98) !important;
+  pointer-events: none !important;
+}
+.caption.is-hidden{
+  transform: translateY(10px) !important;
+}
+
+/* Optional: reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .mute-fab, .caption{
+    transition: none !important;
+  }
+}
+
+/* Desktop: giữ đúng tỉ lệ video (không crop) */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine){
+  .slide video{
+    object-fit: contain;
+    background:#000;
+  }
+}
