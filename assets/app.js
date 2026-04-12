@@ -769,6 +769,14 @@ ensureConsent();
    Build FEED (id = _nc_gid)
    =========================== */
 let FEED = [];
+const INITIAL_RENDER_COUNT = 10;
+const BACKGROUND_APPEND_BATCH = 4;
+const BACKGROUND_APPEND_DELAY = 500;
+const BACKGROUND_APPEND_TRIGGER_INDEX = 4;
+const PRELOAD_ACTIVE_WINDOW = 1;
+let renderedCount = 0;
+let backgroundAppendStarted = false;
+let backgroundAppendTimer = null;
 
 function buildFeedFromRawList() {
   const urls = RAW_LIST.map(normalizeToUrl).filter(Boolean);
@@ -861,48 +869,127 @@ function attachVideoSignals(video, slideEl) {
   });
 }
 
+function getFeedIndexById(id) {
+  return FEED.findIndex(item => item.id === id);
+}
+
+function updateVideoPreloadWindow(activeId = session.activeVideoId) {
+  if (!activeId) return;
+
+  const activeIndex = getFeedIndexById(activeId);
+  if (activeIndex < 0) return;
+
+  document.querySelectorAll(".slide").forEach((slide) => {
+    const video = slide.querySelector("video");
+    if (!video) return;
+
+    const idx = Number(slide.dataset.index || -1);
+    if (idx === activeIndex) {
+      video.preload = "auto";
+    } else if (Math.abs(idx - activeIndex) <= PRELOAD_ACTIVE_WINDOW) {
+      video.preload = "metadata";
+    } else {
+      video.preload = "none";
+    }
+  });
+}
+
+function scheduleBackgroundAppend() {
+  if (backgroundAppendStarted) return;
+  backgroundAppendStarted = true;
+
+  const appendNextBatch = () => {
+    if (renderedCount >= FEED.length) return;
+
+    appendFeedBatch(BACKGROUND_APPEND_BATCH);
+
+    if (renderedCount < FEED.length) {
+      backgroundAppendTimer = setTimeout(appendNextBatch, BACKGROUND_APPEND_DELAY);
+    }
+  };
+
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => appendNextBatch(), { timeout: 1200 });
+  } else {
+    backgroundAppendTimer = setTimeout(appendNextBatch, 300);
+  }
+}
+
+function maybeStartBackgroundAppend() {
+  const activeIndex = getFeedIndexById(session.activeVideoId);
+  if (activeIndex >= BACKGROUND_APPEND_TRIGGER_INDEX) {
+    scheduleBackgroundAppend();
+  }
+}
+
+function createSlide(item, index) {
+  const s = document.createElement("section");
+  s.className = "slide";
+  s.dataset.id = item.id;
+  s.dataset.index = String(index);
+  s.dataset.title = item.title;
+  s.dataset.url = item.url;
+
+  s.innerHTML = `<video playsinline muted preload="none" src="${item.url}"></video>`;
+
+  session.metaById[item.id] = {
+    url: item.url,
+    title: item.title,
+    nc_gid: item.nc_gid || ""
+  };
+
+  const v = s.querySelector("video");
+  if (v) attachVideoSignals(v, s);
+
+  s.addEventListener("click", () => {
+    const video = s.querySelector("video");
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().catch(() => {});
+      hideControls();
+      return;
+    }
+
+    const t = now();
+    const dt = t - lastTapAt;
+    lastTapAt = t;
+
+    if (dt < 320) video.pause();
+    else showControlsBrief(1600);
+  });
+
+  return s;
+}
+
+function appendFeedBatch(count) {
+  if (!feedEl || renderedCount >= FEED.length) return;
+
+  const fragment = document.createDocumentFragment();
+  const end = Math.min(renderedCount + count, FEED.length);
+
+  for (let i = renderedCount; i < end; i++) {
+    fragment.appendChild(createSlide(FEED[i], i));
+  }
+
+  feedEl.appendChild(fragment);
+  renderedCount = end;
+  setupObserver();
+  updateVideoPreloadWindow();
+}
+
 function render() {
   if (!feedEl) return;
+  if (backgroundAppendTimer) {
+    clearTimeout(backgroundAppendTimer);
+    backgroundAppendTimer = null;
+  }
+
   feedEl.innerHTML = "";
+  renderedCount = 0;
+  backgroundAppendStarted = false;
 
-  FEED.forEach(item => {
-    const s = document.createElement("section");
-    s.className = "slide";
-    s.dataset.id = item.id;
-    s.dataset.title = item.title;
-    s.dataset.url = item.url;
-
-    s.innerHTML = `<video playsinline muted preload="metadata" src="${item.url}"></video>`;
-
-    session.metaById[item.id] = {
-      url: item.url,
-      title: item.title,
-      nc_gid: item.nc_gid || ""
-    };
-
-    const v = s.querySelector("video");
-    if (v) attachVideoSignals(v, s);
-
-    s.addEventListener("click", () => {
-      const video = s.querySelector("video");
-      if (!video) return;
-
-      if (video.paused) {
-        video.play().catch(() => {});
-        hideControls();
-        return;
-      }
-
-      const t = now();
-      const dt = t - lastTapAt;
-      lastTapAt = t;
-
-      if (dt < 320) video.pause();
-      else showControlsBrief(1600);
-    });
-
-    feedEl.appendChild(s);
-  });
+  appendFeedBatch(Math.min(INITIAL_RENDER_COUNT, FEED.length));
 
   const first = document.querySelector(".slide");
   if (first?.dataset?.id) {
@@ -911,7 +998,7 @@ function render() {
     if (captionEl) captionEl.textContent = first.dataset.title || "";
   }
 
-  setupObserver();
+  updateVideoPreloadWindow();
 }
 
 function setupObserver() {
@@ -931,6 +1018,9 @@ function setupObserver() {
           session.activeVideoId = id;
           markVideoSeen(id);
         }
+
+        updateVideoPreloadWindow(id);
+        maybeStartBackgroundAppend();
 
         if (captionEl) captionEl.textContent = slide.dataset.title || "";
 
